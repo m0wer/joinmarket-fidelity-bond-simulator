@@ -9,7 +9,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 1000px;
+            max-width: 80em;
             margin: 0 auto;
             padding: 20px;
             background-color: #f9f9f9;
@@ -40,7 +40,7 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        input[type="number"] {
+        input[type="number"], input[type="text"] {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
@@ -59,6 +59,10 @@
         }
         button:hover {
             background-color: #165db8;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
         .results {
             margin-top: 20px;
@@ -112,6 +116,10 @@
         th {
             background-color: #f4f7fc;
             font-weight: bold;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #e8edf5;
         }
         tr:hover {
             background-color: #f6f8fa;
@@ -127,6 +135,7 @@
             height: 100%;
             background-color: #1a73e8;
             width: 0;
+            transition: width 0.3s;
         }
         .fidelity-bond-info {
             margin-top: 20px;
@@ -163,43 +172,179 @@
             color: #999;
             font-style: italic;
         }
+        .sort-arrow {
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-color: #ddd;
+            margin-bottom: -1px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-toggle {
+            background-color: #f4f7fc;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .filter-toggle.active {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            font-weight: normal;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 0.9;
+        }
+        .simulation-progress {
+            margin-top: 15px;
+            display: none;
+        }
+        .cancel-btn {
+            background-color: #d93025;
+            margin-left: 10px;
+        }
+        .cancel-btn:hover {
+            background-color: #b7271f;
+        }
+        .scenario-comparison {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .scenario-card {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            min-width: 200px;
+        }
+        .scenario-card.current {
+            border-color: #1a73e8;
+            border-width: 2px;
+        }
+        @media (max-width: 600px) {
+            .config-section {
+                grid-template-columns: 1fr;
+            }
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <h1>JoinMarket Fidelity Bond Simulator</h1>
-    
     <div class="container">
         <div class="fidelity-bond-info">
             <h3>About This Tool</h3>
             <p>This simulator helps potential JoinMarket makers evaluate their competitive position in the market based on fidelity bonds.</p>
             <p>In JoinMarket, makers with stronger fidelity bonds are more likely to be selected for coinjoins, potentially earning more fees.</p>
-            <p>Use this tool to determine what size fidelity bond you should create based on your competitive goals.</p>
+            <p>For each maker selection, there is a <span class="bondless-allowance">12.5%</span> chance of random selection and <span class="bond-allowance">87.5%</span> chance of selection proportional to bond value.</p>
+            <p>This tool runs multiple simulation trials to give statistically meaningful results with confidence intervals.</p>
         </div>
-        
         <h2>Configuration</h2>
         <div class="config-section">
             <div>
                 <div class="form-group">
-                    <label for="numberOfMakers">Total participants in coinjoin (including taker):</label>
-                    <input type="number" id="numberOfMakers" value="9" min="2" placeholder="9">
+                    <label for="numberOfMakers">Number of makers in coinjoin:</label>
+                    <input type="number" id="numberOfMakers" value="8" min="2" placeholder="8">
+                    <div class="hint">The total number of makers that will participate in the coinjoin</div>
                 </div>
                 <div class="form-group">
-                    <label for="absoluteFeeLimit">Absolute fee limit per participant (sats):</label>
-                    <input type="number" id="absoluteFeeLimit" value="8000" min="0" placeholder="8000">
+                    <label for="bondlessAllowance">
+                        Bondless allowance:
+                        <span class="tooltip">ⓘ
+                            <span class="tooltiptext">Probability that a maker is selected randomly instead of by bond weight. Default in JoinMarket is 0.125 (12.5%)</span>
+                        </span>
+                    </label>
+                    <input type="number" id="bondlessAllowance" value="0.125" min="0" max="1" step="0.001">
                 </div>
             </div>
             <div>
                 <div class="form-group">
-                    <label for="relativeFeeLimit">Relative fee limit (%):</label>
-                    <input type="number" id="relativeFeeLimit" value="0.03" min="0" step="0.001" placeholder="0.03">
+                    <label for="absoluteFeeLimit">Absolute fee limit per maker (sats):</label>
+                    <input type="number" id="absoluteFeeLimit" value="8000" min="0">
                 </div>
                 <div class="form-group">
+                    <label for="relativeFeeLimit">Relative fee limit (%):</label>
+                    <input type="number" id="relativeFeeLimit" value="0.03" min="0" step="0.001">
+                </div>
+            </div>
+            <div>
+                <div class="form-group">
                     <label for="coinjoinSize">Coinjoin size (sats):</label>
-                    <input type="number" id="coinjoinSize" value="10000000" min="1000" placeholder="10,000,000">
+                    <input type="number" id="coinjoinSize" value="10000000" min="1000">
+                </div>
+                <div class="form-group">
+                    <label for="numTrials">
+                        Number of simulation trials:
+                        <span class="tooltip">ⓘ
+                            <span class="tooltiptext">More trials give more accurate results but take longer to calculate</span>
+                        </span>
+                    </label>
+                    <input type="number" id="numTrials" value="10" min="1" max="100">
                 </div>
             </div>
         </div>
-        
         <div class="calculator-section">
             <h3>Fidelity Bond Calculator</h3>
             <p>Calculate your fidelity bond value based on amount and lock time:</p>
@@ -210,26 +355,30 @@
                 </div>
                 <div class="form-group">
                     <label for="lockTimeMonths">Lock time (months):</label>
-                    <input type="number" id="lockTimeMonths" value="12" min="1" placeholder="12">
+                    <input type="number" id="lockTimeMonths" value="12" min="1" max="60">
                 </div>
                 <div class="form-group">
-                    <label for="calculatedBondValue">Calculated bond value (sats²):</label>
+                    <label for="calculatedBondValue">Calculated bond value:</label>
                     <input type="text" id="calculatedBondValue" readonly>
                 </div>
             </div>
         </div>
-        
         <div class="form-group">
-            <label for="fidelityBondValue">Your fidelity bond value (sats²):</label>
+            <label for="fidelityBondValue">Your fidelity bond value to simulate:</label>
             <input type="number" id="fidelityBondValue" value="0" min="0">
             <div id="bondValueHint" class="hint"></div>
         </div>
-        
         <button id="simulateBtn">Simulate Coinjoin</button>
+        <div id="simulationProgress" class="simulation-progress">
+            <div>Running simulation: <span id="simulationStatus">0%</span></div>
+            <div class="progress-bar-container">
+                <div id="simulationProgressBar" class="progress-bar"></div>
+            </div>
+            <button id="cancelSimulationBtn" class="cancel-btn">Cancel</button>
+        </div>
         <div id="loading" class="loading">Loading orderbook data...</div>
         <div id="error" class="error"></div>
     </div>
-    
     <div id="results" class="container results" style="display: none;">
         <h2>Simulation Results</h2>
         <div class="stats-grid">
@@ -254,362 +403,841 @@
                 <div class="stat-label">makers</div>
             </div>
         </div>
-        
         <div class="results-section">
-            <h3>Probability of Being Selected</h3>
-            <div class="fidelity-bond-info">
-                <h3>How Selection Works</h3>
-                <p>In JoinMarket, makers are selected in two ways:</p>
-                <p>1. <strong>Random Selection:</strong> One maker is randomly chosen among all makers (1/n chance, where n is the number of makers).</p>
-                <p>2. <strong>Bond-Based Selection:</strong> The remaining makers (n-1) are chosen proportionally to their fidelity bond values.</p>
-                <p>The probabilities below reflect your chances in each selection method and your overall probability across a large number of coinjoins.</p>
-            </div>
-            
+            <h3>Your Selection Probability (95% confidence)</h3>
             <div class="stat-card">
-                <div id="randomSelectionLabel" class="stat-label">Probability as Random Selection (1/n chance)</div>
-                <div id="randomSelectionProbability" class="stat-value">0%</div>
-                <div class="progress-bar-container">
-                    <div id="randomSelectionBar" class="progress-bar"></div>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div id="bondBasedSelectionLabel" class="stat-label">Probability as Bond-Based Selection ((n-1)/n chance)</div>
-                <div id="bondBasedSelectionProbability" class="stat-value">0%</div>
-                <div class="progress-bar-container">
-                    <div id="bondBasedSelectionBar" class="progress-bar"></div>
-                </div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-label">Overall Probability of Being Selected</div>
-                <div id="overallProbability" class="stat-value">0%</div>
+                <div class="stat-label">Overall Selection Probability</div>
+                <div id="overallProbability" class="stat-value">0% ± 0%</div>
                 <div class="progress-bar-container">
                     <div id="overallProbabilityBar" class="progress-bar"></div>
                 </div>
             </div>
+            <div class="fidelity-bond-info">
+                <h3>How Selection Works in JoinMarket</h3>
+                <p>For each maker selection (repeated for as many makers as needed):</p>
+                <p>1. There is a <span class="bondless-allowance">12.5%</span> chance of selecting any maker with equal probability (random selection)</p>
+                <p>2. There is a <span class="bond-allowance">87.5%</span> chance of selecting a maker with probability proportional to their fidelity bond value</p>
+                <p>3. Once a maker is selected, they are removed from the pool for subsequent selections in the same coinjoin</p>
+                <p>This probability simulates thousands of coinjoins to estimate your chances with statistical confidence.</p>
+            </div>
         </div>
-        
         <div class="results-section">
-            <h3>Filtered Orderbook (Fee and size compatible only)</h3>
-            <p><em>Note: Offers without fidelity bonds are considered above but not included on the table</em></p>
-            <table id="filteredOrderbook">
-                <thead>
-                    <tr>
-                        <th>Counterparty</th>
-                        <th>Min Size</th>
-                        <th>Max Size</th>
-                        <th>Fee Type</th>
-                        <th>Fee</th>
-                        <th>Fidelity Bond</th>
-                        <th>Selection Weight</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Table rows will be populated by JavaScript -->
-                </tbody>
-            </table>
+            <div class="tabs">
+                <div class="tab active" data-tab="orderbook">Orderbook</div>
+                <div class="tab" data-tab="simulation">Simulation Details</div>
+                <div class="tab" data-tab="comparison">Bond Comparison</div>
+            </div>
+            <div id="orderbookTab" class="tab-content active">
+                <h3>Filtered Orderbook (Fee and size compatible)</h3>
+                <div class="filters">
+                    <div class="filter-toggle active" data-filter="all">All Offers</div>
+                    <div class="filter-toggle" data-filter="bonds">With Bonds Only</div>
+                    <div class="filter-toggle" data-filter="nobonds">Without Bonds Only</div>
+                </div>
+                <table id="filteredOrderbook">
+                    <thead>
+                        <tr>
+                            <th data-sort="counterparty">Counterparty</th>
+                            <th data-sort="minsize">Min Size</th>
+                            <th data-sort="maxsize">Max Size</th>
+                            <th data-sort="feetype">Fee Type</th>
+                            <th data-sort="fee">Fee</th>
+                            <th data-sort="bond">Fidelity Bond</th>
+                            <th data-sort="weight">Bond Weight</th>
+                            <th data-sort="probability">Est. Probability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="simulationTab" class="tab-content">
+                <h3>Simulation Details</h3>
+                <div class="simulation-details">
+                    <p>Number of trials: <span id="numTrialsRun">0</span></p>
+                    <p>Coinjoins simulated per trial: <span id="coinjoinsPerTrial">0</span></p>
+                    <p>Total coinjoins simulated: <span id="totalCoinjoinsSimulated">0</span></p>
+                    <p>Simulation time: <span id="simulationTime">0</span> seconds</p>
+                </div>
+                <div id="bondDistributionChart" class="chart-container">
+                    <!-- Chart will be rendered here -->
+                </div>
+            </div>
+            <div id="comparisonTab" class="tab-content">
+                <h3>Bond Value Comparison</h3>
+                <p>See how different bond amounts and lock times affect your selection probability:</p>
+                <div class="calculator-grid">
+                    <div class="form-group">
+                        <label for="comparisonAmount">Amount to lock (sats):</label>
+                        <input type="number" id="comparisonAmount" value="1000000" min="0" step="100000">
+                    </div>
+                    <div class="form-group">
+                        <label for="comparisonMonths">Lock time (months):</label>
+                        <input type="number" id="comparisonMonths" value="12" min="1" max="60">
+                    </div>
+                    <div>
+                        <button id="addComparisonBtn">Add to Comparison</button>
+                    </div>
+                </div>
+                <div id="scenarioComparison" class="scenario-comparison">
+                    <!-- Scenario cards will be added here -->
+                </div>
+            </div>
         </div>
     </div>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-        const simulateBtn = document.getElementById('simulateBtn');
-        const loadingEl = document.getElementById('loading');
-        const errorEl = document.getElementById('error');
-        const resultsEl = document.getElementById('results');
-        const bondAmountEl = document.getElementById('bondAmount');
-        const lockTimeMonthsEl = document.getElementById('lockTimeMonths');
-        const calculatedBondValueEl = document.getElementById('calculatedBondValue');
-        const fidelityBondValueEl = document.getElementById('fidelityBondValue');
-        const bondValueHintEl = document.getElementById('bondValueHint');
-        
-        // Update the calculated bond value when inputs change
-        function updateCalculatedBondValue() {
-            const amount = parseFloat(bondAmountEl.value) || 0;
-            const lockTimeMonths = parseInt(lockTimeMonthsEl.value) || 0;
+        // Web Worker code as a string to create a blob URL
+        const workerCode = `
+            // Simulation worker
             
-            // Default parameters from JoinMarket configuration
-            const interestRate = 0.015;
-            const exponent = 1.3;
-            
-            // Current time in seconds
-            const currentTimeSeconds = Math.floor(Date.now() / 1000);
-            
-            // Use current time as confirmation time
-            const confirmTimeSeconds = currentTimeSeconds;
-            
-            // Calculate locktime by adding months to current time
-            // Convert months to seconds (approximate)
-            const secondsPerMonth = 30 * 24 * 60 * 60;
-            const lockTimeSeconds = currentTimeSeconds + (lockTimeMonths * secondsPerMonth);
-            
-            // Calculate fidelity bond value using the formula from bond-calculator
-            // Gregorian calendar year length in seconds
-            const YEAR = 60 * 60 * 24 * 365.2425;
-            
-            // Calculate time locked in years
-            const timeLockedYears = (lockTimeSeconds - currentTimeSeconds) / YEAR;
-            
-            // Apply the fidelity bond formula: amount * (e^(r*t) - 1) ^ exponent
-            // where r is the interest rate, t is the time in years, and exponent is the bond value exponent
-            const bondValueSats = Math.pow(amount * (Math.exp(interestRate * timeLockedYears) - 1), exponent);
-            
-            // Update the field with formatted value
-            calculatedBondValueEl.value = formatNumber(Math.round(bondValueSats));
-            
-            // Also update the fidelity bond value field
-            fidelityBondValueEl.value = Math.round(bondValueSats);
-            fidelityBondValueEl.dataset.rawValue = Math.round(bondValueSats);
-        }
-        
-        // Add event listeners to the calculator inputs
-        bondAmountEl.addEventListener('input', updateCalculatedBondValue);
-        lockTimeMonthsEl.addEventListener('input', updateCalculatedBondValue);
-        
-        // Initialize the calculated bond value
-        updateCalculatedBondValue();
-        
-        simulateBtn.addEventListener('click', runSimulation);
-        
-        async function runSimulation() {
-            // Reset UI
-            errorEl.style.display = 'none';
-            resultsEl.style.display = 'none';
-            loadingEl.style.display = 'block';
-            
-            try {
-                // Get configuration values
-                const numberOfMakers = parseInt(document.getElementById('numberOfMakers').dataset.rawValue || document.getElementById('numberOfMakers').value) - 1; // Subtract 1 for taker
-                const absoluteFeeLimit = parseInt(document.getElementById('absoluteFeeLimit').dataset.rawValue || document.getElementById('absoluteFeeLimit').value);
-                const relativeFeeLimit = parseFloat(document.getElementById('relativeFeeLimit').dataset.rawValue || document.getElementById('relativeFeeLimit').value) / 100;
-                const coinjoinSize = parseInt(document.getElementById('coinjoinSize').dataset.rawValue || document.getElementById('coinjoinSize').value);
-                const yourFidelityBond = parseFloat(document.getElementById('fidelityBondValue').dataset.rawValue || document.getElementById('fidelityBondValue').value || 0);
+            // Random selection function using bondless allowance
+            function simulateOrderChoose(weights, nicks, makerCount, bondlessAllowance) {
+                const chosenNicks = [];
+                // Make copies to keep the original intact
+                const simWeights = [...weights];
+                const simNicks = [...nicks];
                 
-                // Fetch orderbook data
-                const orderbook = await fetchOrderbook();
+                for (let i = 0; i < makerCount; i++) {
+                    let nickIndex;
+                    
+                    // Decide whether to use bondless or bond-weighted selection
+                    if (Math.random() >= bondlessAllowance && simWeights.reduce((a, b) => a + b, 0) > 0) {
+                        // Use bond-weighted selection
+                        const totalWeight = simWeights.reduce((a, b) => a + b, 0);
+                        let r = Math.random() * totalWeight;
+                        let cumulativeWeight = 0;
+                        
+                        for (let j = 0; j < simWeights.length; j++) {
+                            cumulativeWeight += simWeights[j];
+                            if (r <= cumulativeWeight) {
+                                nickIndex = j;
+                                break;
+                            }
+                        }
+                    } else {
+                        // Use random selection
+                        nickIndex = Math.floor(Math.random() * simNicks.length);
+                    }
+                    
+                    chosenNicks.push(simNicks[nickIndex]);
+                    simWeights.splice(nickIndex, 1);
+                    simNicks.splice(nickIndex, 1);
+                }
                 
-                // Process orderbook data
-                const results = processOrderbook(orderbook, {
-                    numberOfMakers,
-                    absoluteFeeLimit,
-                    relativeFeeLimit,
-                    coinjoinSize,
-                    yourFidelityBond
+                return chosenNicks;
+            }
+            
+            // Run a single trial
+            function runTrial(nicks, weights, coinjoinsPerTrial, makerCount, bondlessAllowance) {
+                const results = {};
+                nicks.forEach(nick => {
+                    results[nick] = 0;
                 });
                 
-                // Display results
-                displayResults(results);
+                // Your nick and weight is at the end of the arrays
+                const yourNick = nicks[nicks.length - 1];
                 
-                // Hide loading and show results
-                loadingEl.style.display = 'none';
-                resultsEl.style.display = 'block';
-            } catch (error) {
-                console.error('Error in simulation:', error);
-                loadingEl.style.display = 'none';
-                errorEl.textContent = 'Error: ' + (error.message || 'Failed to run simulation');
-                errorEl.style.display = 'block';
-            }
-        }
-        
-        async function fetchOrderbook() {
-            try {
-                const response = await fetch('orderbook.json');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch orderbook data');
+                for (let i = 0; i < coinjoinsPerTrial; i++) {
+                    const chosenNicks = simulateOrderChoose(weights, nicks, makerCount, bondlessAllowance);
+                    chosenNicks.forEach(nick => {
+                        results[nick]++;
+                    });
                 }
-                const orderbook = await response.json();
                 
-                // Find the highest fidelity bond in the orderbook
-                if (orderbook.offers && orderbook.offers.length > 0) {
-                    const highestBond = orderbook.offers.reduce((max, offer) => {
-                        return Math.max(max, offer.fidelity_bond_value || 0);
-                    }, 0);
+                // Convert counts to probabilities
+                Object.keys(results).forEach(nick => {
+                    results[nick] = results[nick] / coinjoinsPerTrial;
+                });
+                
+                return results;
+            }
+            
+            // Handle messages from the main thread
+            self.onmessage = function(e) {
+                const { nicks, weights, trials, coinjoinsPerTrial, makerCount, bondlessAllowance } = e.data;
+                
+                // Run the specified number of trials
+                const allResults = {};
+                nicks.forEach(nick => {
+                    allResults[nick] = [];
+                });
+                
+                for (let i = 0; i < trials; i++) {
+                    const trialResults = runTrial(nicks, weights, coinjoinsPerTrial, makerCount, bondlessAllowance);
                     
-                    // Update the hint text
-                    if (highestBond > 0) {
-                        bondValueHintEl.textContent = `Current highest bond in orderbook: ${formatNumber(highestBond)} sats`;
-                        // If user hasn't input a value yet, suggest the highest bond
-                        if (!fidelityBondValueEl.value) {
-                            fidelityBondValueEl.value = formatNumber(highestBond);
-                            fidelityBondValueEl.dataset.rawValue = highestBond;
-                        }
-                    }
+                    // Store the results for each nick
+                    Object.keys(trialResults).forEach(nick => {
+                        allResults[nick].push(trialResults[nick]);
+                    });
+                    
+                    // Report progress back to main thread
+                    self.postMessage({
+                        type: 'progress',
+                        progress: (i + 1) / trials,
+                        currentTrial: i + 1
+                    });
                 }
-                return orderbook;
-            } catch (error) {
-                throw new Error('Failed to load orderbook: ' + error.message);
-            }
-        }
-        
-        function processOrderbook(orderbook, config) {
-            const allOffers = orderbook.offers;
-            const totalOffers = allOffers.length;
-            
-            // Filter offers based on size
-            const sizeCompatibleOffers = allOffers.filter(offer =>
-                offer.minsize <= config.coinjoinSize &&
-                offer.maxsize >= config.coinjoinSize
-            );
-            
-            // Filter offers based on fee
-            const feeCompatibleOffers = sizeCompatibleOffers.filter(offer => {
-                if (offer.ordertype === 'sw0absoffer') {
-                    // Absolute fee
-                    return offer.cjfee <= config.absoluteFeeLimit;
-                } else if (offer.ordertype === 'sw0reloffer') {
-                    // Relative fee
-                    const relativeFee = parseFloat(offer.cjfee);
-                    const calculatedFee = config.coinjoinSize * relativeFee;
-                    return relativeFee <= config.relativeFeeLimit && calculatedFee <= config.absoluteFeeLimit;
-                }
-                return false;
-            });
-            
-            // Count offers with bonds (but don't filter them out)
-            const offersWithBondsCount = feeCompatibleOffers.filter(offer =>
-                offer.fidelity_bond_value > 0
-            ).length;
-            
-            // Calculate actual fee for each offer
-            const offersWithFees = feeCompatibleOffers.map(offer => {
-                let fee;
-                if (offer.ordertype === 'sw0absoffer') {
-                    fee = offer.cjfee;
-                } else if (offer.ordertype === 'sw0reloffer') {
-                    fee = config.coinjoinSize * parseFloat(offer.cjfee);
-                }
-                return {
-                    ...offer,
-                    calculatedFee: fee
-                };
-            });
-            
-            // Sort offers by fidelity bond value in descending order
-            offersWithFees.sort((a, b) =>
-                (b.fidelity_bond_value || 0) - (a.fidelity_bond_value || 0)
-            );
-            
-            // Calculate bond-based selection probabilities
-            // Use same exponent as in the bond calculation (1.3)
-            const exponent = 1.3;
-            const totalBondValue = feeCompatibleOffers.reduce((sum, offer) =>
-                sum + (offer.fidelity_bond_value || 0), 0);
-            const yourBondWeighted = config.yourFidelityBond;
-            
-            // Calculate probabilities based on number of makers configured
-            const numMakers = config.numberOfMakers;
-            const randomChance = 1 / numMakers; // One maker is selected randomly
-            const bondChance = (numMakers - 1) / numMakers; // Remaining makers selected by bond weight
-            
-            // Calculate random selection probability
-            let randomSelectionProbability = 0;
-            if (feeCompatibleOffers.length > 0) {
-                randomSelectionProbability = 1 / (feeCompatibleOffers.length + 1); // +1 for your offer
-            }
-            
-            // Calculate bond-based selection probability
-            let bondBasedSelectionProbability = 0;
-            if (totalBondValue > 0 && config.yourFidelityBond > 0) {
-                bondBasedSelectionProbability = yourBondWeighted / (totalBondValue + yourBondWeighted);
-            }
-            
-            // Calculate overall probability - properly accounting for the two selection methods
-            const randomComponentProbability = randomChance * randomSelectionProbability;
-            const bondComponentProbability = bondChance * bondBasedSelectionProbability;
-            const overallProbability = randomComponentProbability + bondComponentProbability;
-            
-            return {
-                totalOffers,
-                sizeCompatibleOffers: sizeCompatibleOffers.length,
-                feeCompatibleOffers: feeCompatibleOffers.length,
-                offersWithBonds: offersWithBondsCount,
-                randomSelectionProbability,
-                bondBasedSelectionProbability,
-                randomComponentProbability,
-                bondComponentProbability,
-                overallProbability,
-                filteredOffers: offersWithFees,
-                totalBondValue,
-                yourBondWeighted,
-                randomChance,
-                bondChance,
-                numMakers
-            };
-        }
-        
-        function displayResults(results) {
-            // Update statistics
-            document.getElementById('totalOrderbookSize').textContent = formatNumber(results.totalOffers);
-            document.getElementById('sizeCompatibleOffers').textContent = formatNumber(results.sizeCompatibleOffers);
-            document.getElementById('feeCompatibleOffers').textContent = formatNumber(results.feeCompatibleOffers);
-            document.getElementById('offersWithBonds').textContent = formatNumber(results.offersWithBonds);
-            
-            // Update probabilities
-            const randomProb = document.getElementById('randomSelectionProbability');
-            const bondProb = document.getElementById('bondBasedSelectionProbability');
-            const overallProb = document.getElementById('overallProbability');
-            
-            // Update the probability labels to reflect the fraction based on number of makers
-            const randomLabel = document.getElementById('randomSelectionLabel');
-            const bondLabel = document.getElementById('bondBasedSelectionLabel');
-            randomLabel.textContent = `Probability as Random Selection (1/${results.numMakers} chance)`;
-            bondLabel.textContent = `Probability as Bond-Based Selection (${results.numMakers-1}/${results.numMakers} chance)`;
-            
-            const randomProbPercent = (results.randomComponentProbability * 100).toFixed(4);
-            const bondProbPercent = (results.bondComponentProbability * 100).toFixed(4);
-            const overallProbPercent = (results.overallProbability * 100).toFixed(4);
-            
-            randomProb.textContent = randomProbPercent + '%';
-            bondProb.textContent = bondProbPercent + '%';
-            overallProb.textContent = overallProbPercent + '%';
-            
-            // Update progress bars
-            document.getElementById('randomSelectionBar').style.width = Math.min(randomProbPercent * 10, 100) + '%';
-            document.getElementById('bondBasedSelectionBar').style.width = Math.min(bondProbPercent * 10, 100) + '%';
-            document.getElementById('overallProbabilityBar').style.width = Math.min(overallProbPercent * 10, 100) + '%';
-            
-            // Update filtered orderbook table
-            const tableBody = document.querySelector('#filteredOrderbook tbody');
-            tableBody.innerHTML = '';
-            results.filteredOffers.forEach(offer => {
-                const row = document.createElement('tr');
                 
-                // Calculate this offer's weight in selection
-                let selectionWeight = '0%';
-                let bondValue = offer.fidelity_bond_value || 0;
-                if (bondValue > 0 && results.totalBondValue > 0) {
-                    selectionWeight = ((bondValue / results.totalBondValue) * 100).toFixed(2) + '%';
-                } else{
-                    // skip offers without bonds
+                // Calculate statistics for each nick
+                const stats = {};
+                nicks.forEach(nick => {
+                    const values = allResults[nick];
+                    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                                        // Calculate standard deviation
+                    const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / values.length;
+                    const stdDev = Math.sqrt(variance);
+                    
+                    // 95% confidence interval (1.96 is z-score for 95% confidence)
+                    const ciMargin = 1.96 * stdDev / Math.sqrt(values.length);
+                    
+                    stats[nick] = {
+                        mean,
+                        stdDev,
+                        ciMargin,
+                        lowerBound: Math.max(0, mean - ciMargin),
+                        upperBound: Math.min(1, mean + ciMargin),
+                        trials: values.length
+                    };
+                });
+                
+                // Send the final results back to the main thread
+                self.postMessage({
+                    type: 'complete',
+                    stats
+                });
+            };
+        `;
+
+        // Create a blob and URL for the worker
+        const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Element References
+            const simulateBtn = document.getElementById('simulateBtn');
+            const cancelSimulationBtn = document.getElementById('cancelSimulationBtn');
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const resultsEl = document.getElementById('results');
+            const simulationProgressEl = document.getElementById('simulationProgress');
+            const simulationProgressBarEl = document.getElementById('simulationProgressBar');
+            const simulationStatusEl = document.getElementById('simulationStatus');
+            const bondAmountEl = document.getElementById('bondAmount');
+            const lockTimeMonthsEl = document.getElementById('lockTimeMonths');
+            const calculatedBondValueEl = document.getElementById('calculatedBondValue');
+            const fidelityBondValueEl = document.getElementById('fidelityBondValue');
+            const bondValueHintEl = document.getElementById('bondValueHint');
+            const comparisonAmountEl = document.getElementById('comparisonAmount');
+            const comparisonMonthsEl = document.getElementById('comparisonMonths');
+            const addComparisonBtn = document.getElementById('addComparisonBtn');
+            const scenarioComparisonEl = document.getElementById('scenarioComparison');
+            
+            // Tab Navigation
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === tabName + 'Tab') {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // Filters for the orderbook table
+            const filterToggles = document.querySelectorAll('.filter-toggle');
+            filterToggles.forEach(toggle => {
+                toggle.addEventListener('click', () => {
+                    // Update active state
+                    filterToggles.forEach(t => t.classList.remove('active'));
+                    toggle.classList.add('active');
+                    
+                    // Apply filter to table
+                    const filter = toggle.dataset.filter;
+                    filterOrderbookTable(filter);
+                });
+            });
+            
+            // Table sorting
+            const tableHeaders = document.querySelectorAll('#filteredOrderbook th[data-sort]');
+            tableHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortKey = header.dataset.sort;
+                    const isAscending = header.classList.contains('asc');
+                    
+                    // Clear all sort indicators
+                    tableHeaders.forEach(h => {
+                        h.classList.remove('asc', 'desc');
+                        h.querySelector('.sort-arrow')?.remove();
+                    });
+                    
+                    // Set new sort direction
+                    header.classList.add(isAscending ? 'desc' : 'asc');
+                    
+                    // Add sort arrow
+                    const arrow = document.createElement('span');
+                    arrow.className = 'sort-arrow';
+                    arrow.textContent = isAscending ? ' ▼' : ' ▲';
+                    header.appendChild(arrow);
+                    
+                    // Sort the table
+                    sortOrderbookTable(sortKey, !isAscending);
+                });
+                
+                // Add initial sort arrow to first column
+                if (header.dataset.sort === 'bond') {
+                    header.classList.add('desc');
+                    const arrow = document.createElement('span');
+                    arrow.className = 'sort-arrow';
+                    arrow.textContent = ' ▼';
+                    header.appendChild(arrow);
+                }
+            });
+            
+            // Global state
+            let simulationWorker = null;
+            let filteredOffers = [];
+            let currentScenarios = [];
+            let orderbookData = null;
+            
+            // Bond calculation functions
+            function calculateBondValue(amount, lockTimeMonths) {
+                // Default parameters from JoinMarket configuration
+                const interestRate = 0.015;
+                const exponent = 1.3;
+                
+                // Current time in seconds
+                const currentTimeSeconds = Math.floor(Date.now() / 1000);
+                
+                // Calculate locktime by adding months to current time
+                // Convert months to seconds (approximate)
+                const secondsPerMonth = 30 * 24 * 60 * 60;
+                const lockTimeSeconds = currentTimeSeconds + (lockTimeMonths * secondsPerMonth);
+                
+                // Gregorian calendar year length in seconds
+                const YEAR = 60 * 60 * 24 * 365.2425;
+                
+                // Calculate time locked in years
+                const timeLockedYears = (lockTimeSeconds - currentTimeSeconds) / YEAR;
+                
+                // Apply the fidelity bond formula: amount * (e^(r*t) - 1) ^ exponent
+                // where r is the interest rate, t is the time in years, and exponent is the bond value exponent
+                const bondValue = Math.pow(amount * (Math.exp(interestRate * timeLockedYears) - 1), exponent);
+                
+                return Math.round(bondValue);
+            }
+            
+            // Format number with commas
+            function formatNumber(num) {
+                return new Intl.NumberFormat().format(num);
+            }
+            
+            // Update bond value calculation when inputs change
+            function updateCalculatedBondValue() {
+                const amount = parseFloat(bondAmountEl.value) || 0;
+                const lockTimeMonths = parseInt(lockTimeMonthsEl.value) || 0;
+                
+                const bondValue = calculateBondValue(amount, lockTimeMonths);
+                
+                // Update the field with formatted value
+                calculatedBondValueEl.value = formatNumber(bondValue);
+                
+                // Also update the fidelity bond value field
+                fidelityBondValueEl.value = bondValue;
+                fidelityBondValueEl.dataset.rawValue = bondValue;
+            }
+            
+            // Add event listeners to the calculator inputs
+            bondAmountEl.addEventListener('input', updateCalculatedBondValue);
+            lockTimeMonthsEl.addEventListener('input', updateCalculatedBondValue);
+            
+            // Initialize the calculated bond value
+            updateCalculatedBondValue();
+            
+            // Add new scenario to comparison
+            addComparisonBtn.addEventListener('click', addScenarioToComparison);
+            
+            function addScenarioToComparison() {
+                const amount = parseFloat(comparisonAmountEl.value) || 0;
+                const lockTimeMonths = parseInt(comparisonMonthsEl.value) || 0;
+                const bondValue = calculateBondValue(amount, lockTimeMonths);
+                
+                // Check if we have simulation results already
+                if (!orderbookData) {
+                    alert('Please run a simulation first to enable comparisons');
                     return;
                 }
                 
-                // Format fee display
-                let feeDisplay;
-                if (offer.ordertype === 'sw0absoffer') {
-                    feeDisplay = formatNumber(offer.cjfee) + ' sats';
-                } else {
-                    feeDisplay = (parseFloat(offer.cjfee) * 100).toFixed(4) + '%';
+                // Create a new scenario
+                const scenario = {
+                    amount,
+                    lockTimeMonths,
+                    bondValue,
+                    probability: estimateProbability(bondValue)
+                };
+                
+                // Add to scenarios
+                currentScenarios.push(scenario);
+                
+                // Update UI
+                renderScenarioComparison();
+            }
+            
+            // Render the scenario comparison cards
+            function renderScenarioComparison() {
+                scenarioComparisonEl.innerHTML = '';
+                
+                // Current simulation result as the first card
+                const currentBondValue = parseInt(fidelityBondValueEl.value) || 0;
+                const currentCard = document.createElement('div');
+                currentCard.className = 'scenario-card current';
+                currentCard.innerHTML = `
+                    <h4>Current Simulation</h4>
+                    <p>Bond Value: ${formatNumber(currentBondValue)}</p>
+                    <p>Estimated Probability: <strong>${(document.getElementById('overallProbability').textContent || '0%')}</strong></p>
+                `;
+                scenarioComparisonEl.appendChild(currentCard);
+                
+                // Add other scenarios
+                currentScenarios.forEach((scenario, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'scenario-card';
+                    card.innerHTML = `
+                        <h4>Scenario ${index + 1}</h4>
+                        <p>Amount: ${formatNumber(scenario.amount)} sats</p>
+                        <p>Lock Time: ${scenario.lockTimeMonths} months</p>
+                        <p>Bond Value: ${formatNumber(scenario.bondValue)}</p>
+                        <p>Estimated Probability: <strong>${(scenario.probability * 100).toFixed(4)}%</strong></p>
+                        <button class="remove-scenario" data-index="${index}">Remove</button>
+                    `;
+                    scenarioComparisonEl.appendChild(card);
+                });
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-scenario').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        currentScenarios.splice(index, 1);
+                        renderScenarioComparison();
+                    });
+                });
+            }
+            
+            // Estimate probability based on bond value and orderbook data
+            function estimateProbability(bondValue) {
+                if (!orderbookData || !filteredOffers.length) return 0;
+                
+                // Clone the filtered offers and add our bond
+                const offers = [...filteredOffers];
+                const totalBondValue = offers.reduce((sum, offer) => sum + (offer.fidelity_bond_value || 0), 0);
+                
+                // Use a simplified estimate based on bond weight
+                // This is only for quick comparison, not as accurate as the full simulation
+                const bondlessAllowance = parseFloat(document.getElementById('bondlessAllowance').value) || 0.125;
+                const randomSelectionProb = bondlessAllowance / (offers.length + 1);
+                const bondSelectionProb = bondValue > 0 ? (1 - bondlessAllowance) * (bondValue / (totalBondValue + bondValue)) : 0;
+                
+                return randomSelectionProb + bondSelectionProb;
+            }
+            
+            // Filter the orderbook table
+            function filterOrderbookTable(filter) {
+                const rows = document.querySelectorAll('#filteredOrderbook tbody tr');
+                
+                rows.forEach(row => {
+                    const bondValue = parseInt(row.dataset.bond) || 0;
+                    
+                    if (filter === 'all') {
+                        row.style.display = '';
+                    } else if (filter === 'bonds' && bondValue > 0) {
+                        row.style.display = '';
+                    } else if (filter === 'nobonds' && bondValue === 0) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Sort the orderbook table
+            function sortOrderbookTable(sortKey, ascending) {
+                const table = document.getElementById('filteredOrderbook');
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                
+                // Sort rows based on the selected column
+                rows.sort((a, b) => {
+                    let aValue, bValue;
+                    
+                    switch (sortKey) {
+                        case 'counterparty':
+                            aValue = a.cells[0].textContent;
+                            bValue = b.cells[0].textContent;
+                            return ascending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+                        case 'minsize':
+                        case 'maxsize':
+                        case 'fee':
+                        case 'bond':
+                        case 'weight':
+                        case 'probability':
+                            aValue = parseFloat(a.dataset[sortKey]) || 0;
+                            bValue = parseFloat(b.dataset[sortKey]) || 0;
+                            return ascending ? aValue - bValue : bValue - aValue;
+                        case 'feetype':
+                            aValue = a.cells[3].textContent;
+                            bValue = b.cells[3].textContent;
+                            return ascending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+                        default:
+                            return 0;
+                    }
+                });
+                
+                // Remove existing rows
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
                 }
                 
-                row.innerHTML = `
-                    <td>${offer.counterparty}</td>
-                    <td>${formatNumber(offer.minsize)} sats</td>
-                    <td>${formatNumber(offer.maxsize)} sats</td>
-                    <td>${offer.ordertype === 'sw0absoffer' ? 'Absolute' : 'Relative'}</td>
-                    <td>${feeDisplay}</td>
-                    <td>${formatNumber(bondValue)}</td>
-                    <td>${selectionWeight}</td>
-                `;
-                tableBody.appendChild(row);
+                // Append sorted rows
+                rows.forEach(row => tbody.appendChild(row));
+                
+                // Apply the current filter
+                const activeFilter = document.querySelector('.filter-toggle.active').dataset.filter;
+                filterOrderbookTable(activeFilter);
+            }
+            
+            // Main simulation function
+            simulateBtn.addEventListener('click', runSimulation);
+            
+            async function runSimulation() {
+                // Reset UI
+                errorEl.style.display = 'none';
+                resultsEl.style.display = 'none';
+                loadingEl.style.display = 'block';
+                simulateBtn.disabled = true;
+                
+                try {
+                    // Get configuration values
+                    const numberOfMakers = parseInt(document.getElementById('numberOfMakers').value);
+                    const absoluteFeeLimit = parseInt(document.getElementById('absoluteFeeLimit').value);
+                    const relativeFeeLimit = parseFloat(document.getElementById('relativeFeeLimit').value) / 100;
+                    const coinjoinSize = parseInt(document.getElementById('coinjoinSize').value);
+                    const yourFidelityBond = parseInt(fidelityBondValueEl.value || 0);
+                    const numTrials = parseInt(document.getElementById('numTrials').value);
+                    const bondlessAllowance = parseFloat(document.getElementById('bondlessAllowance').value);
+                    
+                    // Update the bondless allowance display in the info boxes
+                    document.querySelectorAll('.bondless-allowance').forEach(el => {
+                        el.textContent = (bondlessAllowance * 100).toFixed(1) + '%';
+                    });
+                    document.querySelectorAll('.bond-allowance').forEach(el => {
+                        el.textContent = ((1 - bondlessAllowance) * 100).toFixed(1) + '%';
+                    });
+                    
+                    // Fetch orderbook data
+                    orderbookData = await fetchOrderbook();
+                    
+                    // Process orderbook data
+                    const processedData = processOrderbook(orderbookData, {
+                        absoluteFeeLimit,
+                        relativeFeeLimit,
+                        coinjoinSize,
+                        yourFidelityBond
+                    });
+                    
+                    filteredOffers = processedData.filteredOffers;
+                    
+                    // Display basic stats
+                    displayStats(processedData);
+                    
+                    // Show simulation progress
+                    loadingEl.style.display = 'none';
+                    simulationProgressEl.style.display = 'block';
+                    
+                    // Start the simulation worker
+                    const startTime = performance.now();
+                    
+                    // Create a worker
+                    if (simulationWorker) {
+                        simulationWorker.terminate();
+                    }
+                    simulationWorker = new Worker(workerUrl);
+                    
+                    // Prepare data for simulation
+                    const weights = filteredOffers.map(offer => offer.fidelity_bond_value || 0);
+                    const nicks = filteredOffers.map(offer => offer.counterparty);
+                    
+                    // Add your bond to the simulation
+                    weights.push(yourFidelityBond);
+                    nicks.push('Your Offer');
+                    
+                    // Calculate coinjoins per trial based on the number of offers
+                    const coinjoinsPerTrial = Math.max(100, filteredOffers.length * 10);
+                    
+                    // Handle worker messages
+                    simulationWorker.onmessage = function(e) {
+                        const data = e.data;
+                        
+                        if (data.type === 'progress') {
+                            // Update progress bar
+                            const percent = Math.round(data.progress * 100);
+                            simulationStatusEl.textContent = `${percent}% (Trial ${data.currentTrial}/${numTrials})`;
+                            simulationProgressBarEl.style.width = `${percent}%`;
+                        } else if (data.type === 'complete') {
+                            // Simulation complete
+                            const endTime = performance.now();
+                            const simulationTime = ((endTime - startTime) / 1000).toFixed(2);
+                            
+                            // Update simulation details
+                            document.getElementById('numTrialsRun').textContent = numTrials;
+                            document.getElementById('coinjoinsPerTrial').textContent = formatNumber(coinjoinsPerTrial);
+                            document.getElementById('totalCoinjoinsSimulated').textContent = formatNumber(numTrials * coinjoinsPerTrial);
+                            document.getElementById('simulationTime').textContent = simulationTime;
+                            
+                            // Display simulation results
+                            displaySimulationResults(data.stats, processedData, nicks);
+                            
+                            // Hide progress and show results
+                            simulationProgressEl.style.display = 'none';
+                            resultsEl.style.display = 'block';
+                            simulateBtn.disabled = false;
+                            
+                            // Update the comparison tab if needed
+                            if (currentScenarios.length > 0) {
+                                renderScenarioComparison();
+                            }
+                        }
+                    };
+                    
+                    // Start the simulation
+                    simulationWorker.postMessage({
+                        nicks,
+                        weights,
+                        trials: numTrials,
+                        coinjoinsPerTrial,
+                        makerCount: numberOfMakers,
+                        bondlessAllowance
+                    });
+                    
+                } catch (error) {
+                    console.error('Error in simulation:', error);
+                    loadingEl.style.display = 'none';
+                    simulationProgressEl.style.display = 'none';
+                    errorEl.textContent = 'Error: ' + (error.message || 'Failed to run simulation');
+                    errorEl.style.display = 'block';
+                    simulateBtn.disabled = false;
+                }
+            }
+            
+            // Cancel simulation
+            cancelSimulationBtn.addEventListener('click', function() {
+                if (simulationWorker) {
+                    simulationWorker.terminate();
+                    simulationWorker = null;
+                }
+                simulationProgressEl.style.display = 'none';
+                simulateBtn.disabled = false;
+                errorEl.textContent = 'Simulation canceled by user';
+                errorEl.style.display = 'block';
             });
-        }
-        
-        function formatNumber(num) {
-            return new Intl.NumberFormat().format(num);
-        }
-    });
+            
+            async function fetchOrderbook() {
+                try {
+                    const response = await fetch('orderbook.json');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch orderbook data');
+                    }
+                    const orderbook = await response.json();
+                    
+                    // Find the highest fidelity bond in the orderbook
+                    if (orderbook.offers && orderbook.offers.length > 0) {
+                        const highestBond = orderbook.offers.reduce((max, offer) => {
+                            return Math.max(max, offer.fidelity_bond_value || 0);
+                        }, 0);
+                        
+                        // Update the hint text
+                        if (highestBond > 0) {
+                            bondValueHintEl.textContent = `Current highest bond in orderbook: ${formatNumber(highestBond)}`;
+                        }
+                    }
+                    
+                    return orderbook;
+                } catch (error) {
+                    throw new Error('Failed to load orderbook: ' + error.message);
+                }
+            }
+            
+            function processOrderbook(orderbook, config) {
+                const allOffers = orderbook.offers;
+                const totalOffers = allOffers.length;
+                
+                // Filter offers based on size
+                const sizeCompatibleOffers = allOffers.filter(offer =>
+                    offer.minsize <= config.coinjoinSize &&
+                    offer.maxsize >= config.coinjoinSize
+                );
+                
+                // Filter offers based on fee
+                const feeCompatibleOffers = sizeCompatibleOffers.filter(offer => {
+                    if (offer.ordertype === 'sw0absoffer') {
+                        // Absolute fee
+                        return offer.cjfee <= config.absoluteFeeLimit;
+                    } else if (offer.ordertype === 'sw0reloffer') {
+                        // Relative fee
+                        const relativeFee = parseFloat(offer.cjfee);
+                        const calculatedFee = config.coinjoinSize * relativeFee;
+                        return relativeFee <= config.relativeFeeLimit && calculatedFee <= config.absoluteFeeLimit;
+                    }
+                    return false;
+                });
+                
+                // Count offers with bonds
+                const offersWithBondsCount = feeCompatibleOffers.filter(offer =>
+                    offer.fidelity_bond_value > 0
+                ).length;
+                
+                // Calculate actual fee for each offer
+                const offersWithFees = feeCompatibleOffers.map(offer => {
+                    let fee;
+                    if (offer.ordertype === 'sw0absoffer') {
+                        fee = parseInt(offer.cjfee);
+                    } else if (offer.ordertype === 'sw0reloffer') {
+                        fee = Math.round(config.coinjoinSize * parseFloat(offer.cjfee));
+                    }
+                    return {
+                        ...offer,
+                        calculatedFee: fee
+                    };
+                });
+                
+                // Sort offers by fidelity bond value in descending order
+                offersWithFees.sort((a, b) =>
+                    (b.fidelity_bond_value || 0) - (a.fidelity_bond_value || 0)
+                );
+                
+                // Calculate total bond value and weights
+                const totalBondValue = feeCompatibleOffers.reduce((sum, offer) =>
+                    sum + (offer.fidelity_bond_value || 0), 0);
+                
+                return {
+                    totalOffers,
+                    sizeCompatibleOffers: sizeCompatibleOffers.length,
+                    feeCompatibleOffers: feeCompatibleOffers.length,
+                    offersWithBonds: offersWithBondsCount,
+                    filteredOffers: offersWithFees,
+                    totalBondValue
+                };
+            }
+            
+            function displayStats(data) {
+                // Update statistics
+                document.getElementById('totalOrderbookSize').textContent = formatNumber(data.totalOffers);
+                document.getElementById('sizeCompatibleOffers').textContent = formatNumber(data.sizeCompatibleOffers);
+                document.getElementById('feeCompatibleOffers').textContent = formatNumber(data.feeCompatibleOffers);
+                document.getElementById('offersWithBonds').textContent = formatNumber(data.offersWithBonds);
+            }
+            
+            function displaySimulationResults(stats, data, nicks) {
+                // Get your stats
+                const yourStats = stats['Your Offer'];
+                const yourMean = yourStats ? yourStats.mean : 0;
+                const yourCiMargin = yourStats ? yourStats.ciMargin : 0;
+                
+                // Update selection probability
+                const overallProb = document.getElementById('overallProbability');
+                const meanPercent = (yourMean * 100).toFixed(4);
+                const ciPercent = (yourCiMargin * 100).toFixed(4);
+                
+                overallProb.textContent = `${meanPercent}% ± ${ciPercent}%`;
+                
+                // Update progress bar
+                const progressBar = document.getElementById('overallProbabilityBar');
+                progressBar.style.width = `${Math.min(yourMean * 100 * 10, 100)}%`;
+                
+                // Populate the table with all offers and their estimated probabilities
+                const tableBody = document.querySelector('#filteredOrderbook tbody');
+                tableBody.innerHTML = '';
+                
+                data.filteredOffers.forEach((offer, index) => {
+                    const row = document.createElement('tr');
+                    
+                    // Set data attributes for sorting
+                    row.dataset.bond = offer.fidelity_bond_value || 0;
+                    row.dataset.minsize = offer.minsize;
+                    row.dataset.maxsize = offer.maxsize;
+                    row.dataset.fee = offer.calculatedFee;
+                    
+                    // Calculate selection weight
+                    let selectionWeight = 0;
+                    const bondValue = offer.fidelity_bond_value || 0;
+                    if (bondValue > 0 && data.totalBondValue > 0) {
+                        selectionWeight = bondValue / data.totalBondValue;
+                    }
+                    row.dataset.weight = selectionWeight;
+                    
+                    // Get probability from simulation results
+                    const nick = offer.counterparty;
+                    const probability = stats[nick] ? stats[nick].mean : 0;
+                    row.dataset.probability = probability;
+                    
+                    // Format fee display
+                    let feeDisplay;
+                    if (offer.ordertype === 'sw0absoffer') {
+                        feeDisplay = formatNumber(offer.cjfee) + ' sats';
+                    } else {
+                        feeDisplay = (parseFloat(offer.cjfee) * 100).toFixed(4) + '%';
+                    }
+                    
+                    // Create cells
+                    row.innerHTML = `
+                        <td>${offer.counterparty}</td>
+                        <td>${formatNumber(offer.minsize)} sats</td>
+                        <td>${formatNumber(offer.maxsize)} sats</td>
+                        <td>${offer.ordertype === 'sw0absoffer' ? 'Absolute' : 'Relative'}</td>
+                        <td>${feeDisplay}</td>
+                        <td>${bondValue > 0 ? formatNumber(bondValue) : '<span class="no-bond">None</span>'}</td>
+                        <td>${(selectionWeight * 100).toFixed(4)}%</td>
+                        <td>${(probability * 100).toFixed(4)}%</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                // Add your offer to the table
+                const yourRow = document.createElement('tr');
+                yourRow.style.fontWeight = 'bold';
+                yourRow.dataset.bond = fidelityBondValueEl.value || 0;
+                yourRow.dataset.probability = yourMean;
+                
+                yourRow.innerHTML = `
+                    <td>Your Offer</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>${parseInt(fidelityBondValueEl.value) > 0 ? formatNumber(fidelityBondValueEl.value) : '<span class="no-bond">None</span>'}</td>
+                    <td>${data.totalBondValue > 0 && parseInt(fidelityBondValueEl.value) > 0 ? 
+                        ((parseInt(fidelityBondValueEl.value) / (data.totalBondValue + parseInt(fidelityBondValueEl.value))) * 100).toFixed(4) : '0.0000'}%</td>
+                    <td>${meanPercent}% ± ${ciPercent}%</td>
+                `;
+                
+                tableBody.appendChild(yourRow);
+                
+                // Sort the table by bond value (default sort)
+                sortOrderbookTable('bond', false);
+            }
+        });
     </script>
 </body>
 </html>
